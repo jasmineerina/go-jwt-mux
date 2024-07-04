@@ -6,9 +6,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jasmineerina/go-jwt-mux/controllers/authcontroller"
+	"github.com/jasmineerina/go-jwt-mux/models"
 )
 
 func main() {
+
+	models.ConnectDatabase()
 
 	r := mux.NewRouter()
 
