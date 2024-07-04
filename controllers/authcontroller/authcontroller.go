@@ -3,7 +3,10 @@ package authcontroller
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jasmineerina/go-jwt-mux/config"
 	"github.com/jasmineerina/go-jwt-mux/helper"
 	"github.com/jasmineerina/go-jwt-mux/models"
 	"golang.org/x/crypto/bcrypt"
@@ -41,6 +44,39 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		helper.ResponseJSON(w, http.StatusUnauthorized, response)
 		return
 	}
+
+	// proses pembuatan token jwt
+	expTime := time.Now().Add(time.Minute * 1)
+	claims := &config.JWTClaim{
+		Username: user.Username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "go-jwt-mux",
+			ExpiresAt: jwt.NewNumericDate(expTime),
+		},
+	}
+
+	// mendeklarasikan algoritma yang akan digunakan untuk signing
+	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// signed token
+	token, err := tokenAlgo.SignedString(config.JWT_KEY)
+	if err != nil {
+		response := map[string]string{"message": err.Error()}
+		helper.ResponseJSON(w, http.StatusInternalServerError, response)
+		return
+	}
+
+	// set token yang ke cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Path:     "/",
+		Value:    token,
+		HttpOnly: true,
+	})
+
+	response := map[string]string{"message": "Login Berhasil"}
+	helper.ResponseJSON(w, http.StatusOK, response)
+	return
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
